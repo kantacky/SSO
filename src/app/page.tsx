@@ -3,33 +3,34 @@
 import Image from "next/image";
 import Icon from "@/image/Icon1200.png";
 import React from "react";
+import { useSearchParams } from "next/navigation";
 
 export default function Page() {
+  const searchParams = useSearchParams();
+  const paramDomain = searchParams.get("domain");
   const [domains, setDomains] = React.useState<string[]>([]);
 
-  const [email, setEmail] = React.useState("");
+  const [username, setUsername] = React.useState("");
+  const [domain, setDomain] = React.useState("");
   const [password, setPassword] = React.useState("");
-
   const [isRemember, setIsRemember] = React.useState(false);
-
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-
   const [errorMessage, setErrorMessage] = React.useState("");
 
-  const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(event.target.value);
+  const handleUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setUsername(event.target.value);
   };
-
+  const handleDomainChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setDomain(event.target.value);
+  };
   const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setPassword(event.target.value);
   };
-
   const handleIsRememberedChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     setIsRemember(event.target.checked);
   };
-
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     setIsSubmitting(true);
     event.preventDefault();
@@ -38,13 +39,26 @@ export default function Page() {
 
   React.useEffect(() => {
     const fetchDomains = async () => {
-      const response = await fetch("/api/domain");
-      const data = await response.json();
-      setDomains(data);
+      const res = await fetch("/api/domains");
+      if (!res.ok) {
+        setErrorMessage("Failed to fetch domains");
+        return;
+      }
+      const json = await res.json();
+
+      return json;
     };
 
-    fetchDomains();
-  });
+    fetchDomains().then((fetchedDomains) => {
+      setDomains(fetchedDomains);
+
+      setDomain(
+        paramDomain && fetchedDomains.includes(paramDomain)
+          ? paramDomain
+          : domains[0]
+      );
+    });
+  }, [paramDomain]);
 
   return (
     <main>
@@ -100,7 +114,7 @@ export default function Page() {
                   autoComplete="username"
                   className="block w-full rounded-md border-0 pl-10 pr-20 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                   placeholder="Username"
-                  onChange={handleEmailChange}
+                  onChange={handleUsernameChange}
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center">
                   <div className="flex items-center">
@@ -113,9 +127,16 @@ export default function Page() {
                     id="domain"
                     name="domain"
                     className="h-full rounded-md border-0 bg-transparent py-0 pl-2 pr-7 text-gray-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm"
+                    onChange={handleDomainChange}
                   >
-                    {domains.map((domain) => (
-                      <option key={domain}>{domain}</option>
+                    {domains.map((domainValue: string) => (
+                      <option
+                        key={domainValue}
+                        value={domainValue}
+                        selected={domainValue === domain}
+                      >
+                        {domainValue}
+                      </option>
                     ))}
                   </select>
                 </div>
